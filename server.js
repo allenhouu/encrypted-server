@@ -17,6 +17,7 @@ app.listen(port, () => {
 app.get("/public_key", (req, res) => {
         res.status(200).json(publicKey);
 });
+const crypto = require("crypto");
 
 const generateKeys = () => {
     const keys = crypto.generateKeyPairSync('rsa', {
