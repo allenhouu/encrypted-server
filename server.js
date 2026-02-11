@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors')
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
-const user = [];
+const users = [];
 const admin = [{
     user: 'Mr. Goldstein',
     hash: 'ff5de730fa61e4b9d3ec2298efdce03e24240fb00d45f0d21f4644cda8c85ac4864091d93eefbfbb3b44b11fd6a8107d7f4675f9d4c93fc2503c27b9aa927dc8',
@@ -44,21 +44,22 @@ const generateKeys = () => {
 let {publicKey, privateKey} = generateKeys();
 
 app.post("/user", (req, res) => {
-    const {username, password} = req.body;
-    if (!username || !password) {
+    const {encryptedUserName, encryptedPassword} = req.body;
+    if (!encryptedUserName || !encryptedPassword) {
         return res.status(400).json({error: 'Username or Password is required'});
     }
 
-    let decryptedUser = decryptData(username);
-    let decryptedPassword = decryptedUser(password);
+    let decryptedUser = decryptData(encryptedUserName);
+    let decryptedPassword = decryptData(encryptedPassword);
 
-    for (let i = 0; i < user.length; i++) {
-        if (user[i].username === decryptedUser) {
+    for (let i = 0; i < users.length; i++) {
+        if (users[i].username === decryptedUser) {
             return res.status(400).json({error: 'Username already in user'});
         }
     }
+    res.status(200).json({success: 'Successfully created user'})
+    createUser(decryptedUser, decryptedPassword);
 
-   createUser(user);
 });
 
 const decryptData = (user) => {
@@ -90,6 +91,43 @@ function createUser(user, password) {
             hash: hash,
             data: ""
         }
-    })
 
+        users.push(newUser);
+    })
 }
+
+function verifyPassword(inputPassword, storedSalt, storedHash, actionOnSuccess, actionOnFail) {
+    crypto.scrypt(inputPassword, storedSalt, 64, (err, derivedKey) => {
+        if (err) throw err;
+
+        const inputHash = derivedKey.toString('hex');
+
+        // Compare the newly generated hash with the one stored in the database
+        if(storedHash === inputHash) {
+            actionOnSuccess();
+        } else
+            actionOnFail();
+    });
+}
+
+
+app.put("/data", (req, res) => {
+    const {encryptedUserName, encryptedPassword, encryptedData} = req.body;
+    const {queryData} = req.query;
+
+    if (!encryptedUserName || !encryptedPassword || !encryptedData) {
+        return res.status(400).json({error: "Invalid encrypted data provided"});
+    }
+    let decryptedUser = decryptData(encryptedUserName);
+    let decryptedPassword = decryptedData(encryptedPassword);
+    let decryptedData = decryptData(encryptedData);
+
+    for (let i = 0; i <  admin.length; i++) {
+        if (decryptedUser === admin[i].user) {
+            users[i] = decryptedData;
+            return res.status(200).send("User exists");
+        }
+    }
+    return res.status(400).json({error: "Unauthorized user"});
+
+});
