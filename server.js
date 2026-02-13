@@ -113,21 +113,37 @@ function verifyPassword(inputPassword, storedSalt, storedHash, actionOnSuccess, 
 
 app.put("/data", (req, res) => {
     const {encryptedUserName, encryptedPassword, encryptedData} = req.body;
-    const {queryData} = req.query;
+    const {user} = req.query.user;
 
-    if (!encryptedUserName || !encryptedPassword || !encryptedData) {
+    if (!encryptedUserName || !encryptedPassword || !encryptedData || !user) {
         return res.status(400).json({error: "Invalid encrypted data provided"});
     }
     let decryptedUser = decryptData(encryptedUserName);
-    let decryptedPassword = decryptedData(encryptedPassword);
+    let decryptedPassword = decryptData(encryptedPassword);
     let decryptedData = decryptData(encryptedData);
 
-    for (let i = 0; i <  admin.length; i++) {
-        if (decryptedUser === admin[i].user) {
-            users[i] = decryptedData;
-            return res.status(200).send("User exists");
+    let target = users.find(user => user.username === decryptedUser);
+
+    if (!target) {
+        return res.status(404).json({error: 'Target not found'});
+    }
+
+    let account = target;
+    let isAdmin = false;
+
+    for (let i = 0; i < admin.length; i++) {
+        if (admin[i].user === decryptedUser)
+        {
+            isAdmin = true;
+            account = admin[i];
+            break;
         }
     }
-    return res.status(400).json({error: "Unauthorized user"});
 
+    verifyPassword(encryptedPassword, account.salt, account.hash, () => {
+        target.data = decryptedData;
+        res.status(200).json({success: 'Successfully verified'});
+    }, () => {
+        res.status(400).json({error: 'Invalid credentials'});
+    });
 });
