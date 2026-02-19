@@ -158,7 +158,7 @@ const urlSafeToBase64 = (urlSafeStr) => {
 };
 
 app.get("/data", (req, res) => {
-    const {u, p} = req.body;
+    const {u, p} = req.query;
     let encryptedUserName = urlSafeToBase64(u);
     let encryptedPassword = urlSafeToBase64(p);
 
@@ -186,7 +186,7 @@ app.get("/data", (req, res) => {
     }
 
     verifyPassword(decryptedPassword, account.salt, account.hash, () => {
-        res.status(200).json({success: 'Successfully verified'});
+        res.status(200).json('Successfully verified');
     }, () => {
         res.status(400).json({error: 'Invalid credentials'});
     })
