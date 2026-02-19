@@ -186,7 +186,7 @@ app.get("/data", (req, res) => {
     }
 
     verifyPassword(decryptedPassword, account.salt, account.hash, () => {
-        res.status(200).json('Successfully verified');
+        res.status(200).json(account.data);
     }, () => {
         res.status(400).json({error: 'Invalid credentials'});
     })
