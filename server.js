@@ -148,17 +148,27 @@ app.put("/data", (req, res) => {
     });
 });
 
+const urlSafeToBase64 = (urlSafeStr) => {
+    // Add padding back for standard Base64 if needed
+    let standardB64 = urlSafeStr.replace(/-/g, '+').replace(/_/g, '/');
+    while (standardB64.length % 4) {
+        standardB64 += '=';
+    }
+    return standardB64;
+};
+
 app.get("/data", (req, res) => {
     const {u, p} = req.body;
-    const user = req.query.user;
+    let encryptedUserName = urlSafeToBase64(u);
+    let encryptedPassword = urlSafeToBase64(p);
 
-    if (!u || !p || !user) {
+    if (!encryptedUserName || !encryptedPassword) {
         return res.status(400).json({error: "Invalid query parameters"})
     }
-    let username = decryptData(u);
-    let password = decryptData(p);
+    let decryptedUser = decryptData(encryptedUserName);
+    let decryptedPassword = decryptData(encryptedPassword);
 
-    let target = users.find(user => user.username === username);
+    let target = users.find(user => user.username === decryptedUser);
 
     if (!target) {
         return res.status(404).json({error: "Target not found"});
@@ -167,7 +177,7 @@ app.get("/data", (req, res) => {
     let isAdmin = false;
 
     for (let i = 0; i < admin.length; i++) {
-        if (admin[i].user === username)
+        if (admin[i].user === decryptedUser)
         {
             isAdmin = true;
             account = admin[i];
@@ -175,7 +185,7 @@ app.get("/data", (req, res) => {
         }
     }
 
-    verifyPassword(password, account.salt, account.hash, () => {
+    verifyPassword(decryptedPassword, account.salt, account.hash, () => {
         res.status(200).json({success: 'Successfully verified'});
     }, () => {
         res.status(400).json({error: 'Invalid credentials'});
