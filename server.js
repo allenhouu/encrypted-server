@@ -146,38 +146,38 @@ app.put("/data", (req, res) => {
     }, () => {
         res.status(400).json({error: 'Invalid credentials'});
     });
+});
 
-    app.get("/data", (req, res) => {
-        const {u, p} = req.body;
-        const user = req.query.user;
+app.get("/data", (req, res) => {
+    const {u, p} = req.body;
+    const user = req.query.user;
 
-        if (!u || !p || !user) {
-            return res.status(400).json({error: "Invalid query parameters"})
+    if (!u || !p || !user) {
+        return res.status(400).json({error: "Invalid query parameters"})
+    }
+    let username = decryptData(u);
+    let password = decryptData(p);
+
+    let target = users.find(user => user.username === username);
+
+    if (!target) {
+        return res.status(404).json({error: "Target not found"});
+    }
+    let account = target;
+    let isAdmin = false;
+
+    for (let i = 0; i < admin.length; i++) {
+        if (admin[i].user === username)
+        {
+            isAdmin = true;
+            account = admin[i];
+            break;
         }
-        let username = decryptData(u);
-        let password = decryptData(p);
+    }
 
-        let target = users.find(user => user.username === username);
-
-        if (!target) {
-            return res.status(404).json({error: "Target not found"});
-        }
-        let account = target;
-        let isAdmin = false;
-
-        for (let i = 0; i < admin.length; i++) {
-            if (admin[i].user === username)
-            {
-                isAdmin = true;
-                account = admin[i];
-                break;
-            }
-        }
-
-        verifyPassword(password, account.salt, account.hash, () => {
-            res.status(200).json({success: 'Successfully verified'});
-        }, () => {
-            res.status(400).json({error: 'Invalid credentials'});
-        })
+    verifyPassword(password, account.salt, account.hash, () => {
+        res.status(200).json({success: 'Successfully verified'});
+    }, () => {
+        res.status(400).json({error: 'Invalid credentials'});
     })
 });
