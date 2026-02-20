@@ -52,14 +52,24 @@ app.post("/user", (req, res) => {
     let decryptedUser = decryptData(encryptedUserName);
     let decryptedPassword = decryptData(encryptedPassword);
 
-    for (let i = 0; i < users.length; i++) {
-        if (users[i].username === decryptedUser) {
-            return res.status(400).json({error: 'Username already in user'});
+    let exists = false;
+    for (let i = 0; i < admin.length; i++) {
+        if (admin[i].user === decryptedUser) {
+            res.status(400).json({error: 'Username already in use'});
+            return;
         }
     }
-    res.status(200).json({success: 'Successfully created user'})
+    for (let i = 0; i < users.length; i++) {
+        if (users[i].username === decryptedUser) {
+            exists = true;
+            break;
+        }
+    }
+    if (exists) {
+        return res.status(400).json({error: 'Username already in use'});
+    }
     createUser(decryptedUser, decryptedPassword);
-
+    res.status(200).json({success: 'Successfully created user'})
 });
 
 const decryptData = (user) => {
