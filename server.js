@@ -7,11 +7,13 @@ const admin = [{
     username: 'Mr. Goldstein',
     hash: 'ff5de730fa61e4b9d3ec2298efdce03e24240fb00d45f0d21f4644cda8c85ac4864091d93eefbfbb3b44b11fd6a8107d7f4675f9d4c93fc2503c27b9aa927dc8',
     salt: '19bc8c2e05f668a19bccc5262042af2b'
-}, {
-    username: 'Allen',
-    salt: '3ab3c6f4e8c57f320dd7d5226bfecf25',
-    hash: '320d91464745f6de56ae95c99045416c4be556bd7bb83172775c6a5f57759fdd791c1b2da063585fbff29d987a46a8a60e652050be6c428edb06f53e817665a7',
-}
+},
+    {
+        username: 'Allen',
+        salt: 'a215616415cb1e7e755e11d64932825f',
+        hash: '8289e6bdcc06c81b4477e322d56d0285f604c29e7642ed628c5b6e75751af865671bb40fbf8ae12417ee5b5b9a6a29a513a4083eb42696e9984daa6a45082a8b',
+    }
+
 ];
 
 const app = express();
@@ -147,10 +149,10 @@ app.put("/data", (req, res) => {
                 {
                     userFound = true;
                     verifyPassword(decryptedPassword, admin[i].salt, admin[i].hash, () => {
-                        user[j].data = decryptedData;
+                        users[j].data = decryptedData;
                         return res.status(200).json({success: 'Successfully verified'});
                     }, () => {
-                        return res.status(400).json({error: 'Invalid credentials'});
+                        return res.status(400).json({error: 'Unauthorized access'});
                     });
                 }
             }
@@ -160,14 +162,14 @@ app.put("/data", (req, res) => {
     {
         for (let i = 0; i < users.length; i++)
         {
-            if (users[i].username === decryptedUser && user === decryptedData)
+            if (user === users[i].username && user === decryptedUser)
             {
                 userFound = true;
-                verifyPassword(decryptedPassword, user[i].salt, user[i].hash, () => {
-                    user[i].data = decryptedData;
+                verifyPassword(decryptedPassword, users[i].salt, users[i].hash, () => {
+                    users[i].data = decryptedData;
                     return res.status(200).json({success: 'Successfully verified'});
                 }, () => {
-                    return res.status(400).json({error: 'Invalid credentials'});
+                    return res.status(400).json({error: 'Unauthorized access'});
                 });
             }
         }
@@ -215,7 +217,7 @@ app.get("/data", (req, res) => {
                     verifyPassword(decryptedPassword, admin[i].salt, admin[i].hash, () => {
                         return res.status(200).json(users[j].data);
                     }, () => {
-                        return res.status(400).json({error: 'Invalid credentials'});
+                        return res.status(400).json({error: 'Unauthorized access'});
                     });
                 }
             }
@@ -225,13 +227,13 @@ app.get("/data", (req, res) => {
     {
         for (let i = 0; i < users.length; i++)
         {
-            if (users[i].username === user && user === decryptedUser)
+            if (user === users[i].username && user === decryptedUser)
             {
                 userFound = true;
-                verifyPassword(decryptedPassword, user[i].salt, user[i].hash, () => {
+                verifyPassword(decryptedPassword, users[i].salt, users[i].hash, () => {
                     return res.status(200).json(users[i].data);
                 }, () => {
-                    return res.status(400).json({error: 'Invalid credentials'});
+                    return res.status(400).json({error: 'Unauthorized access'});
                 });
             }
         }
