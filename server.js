@@ -4,10 +4,15 @@ const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const users = [];
 const admin = [{
-    user: 'Mr. Goldstein',
+    username: 'Mr. Goldstein',
     hash: 'ff5de730fa61e4b9d3ec2298efdce03e24240fb00d45f0d21f4644cda8c85ac4864091d93eefbfbb3b44b11fd6a8107d7f4675f9d4c93fc2503c27b9aa927dc8',
     salt: '19bc8c2e05f668a19bccc5262042af2b'
-}];
+}, {
+    username: 'Allen',
+    salt: '3ab3c6f4e8c57f320dd7d5226bfecf25',
+    hash: '320d91464745f6de56ae95c99045416c4be556bd7bb83172775c6a5f57759fdd791c1b2da063585fbff29d987a46a8a60e652050be6c428edb06f53e817665a7',
+}
+];
 
 const app = express();
 app.use(cors({
@@ -54,7 +59,7 @@ app.post("/user", (req, res) => {
 
     let exists = false;
     for (let i = 0; i < admin.length; i++) {
-        if (admin[i].user === decryptedUser) {
+        if (admin[i].username === decryptedUser) {
             res.status(400).json({error: 'Username already in use'});
             return;
         }
@@ -101,7 +106,6 @@ function createUser(user, password) {
             hash: hash,
             data: ""
         }
-
         users.push(newUser);
     })
 }
@@ -131,6 +135,7 @@ app.put("/data", (req, res) => {
     let decryptedUser = decryptData(encryptedUserName);
     let decryptedPassword = decryptData(encryptedPassword);
     let decryptedData = decryptData(encryptedData);
+    let userFound = false;
 
     let target = users.find(user => user.username === decryptedUser);
 
@@ -142,11 +147,36 @@ app.put("/data", (req, res) => {
     let isAdmin = false;
 
     for (let i = 0; i < admin.length; i++) {
-        if (admin[i].user === decryptedUser)
+        if (admin[i].username === decryptedUser)
         {
             isAdmin = true;
             account = admin[i];
-            break;
+            for (let i = 0; i < users.length; i++) {
+                if (user === users[i].data)
+                {
+                    verifyPassword(decryptedPassword, account.salt, account.hash, () => {
+                        target.data = decryptedData;
+                        res.status(200).json({success: 'Successfully verified'});
+                    }, () => {
+                        res.status(400).json({error: 'Invalid credentials'});
+                    });
+                }
+            }
+        }
+    }
+    if (!isAdmin)
+    {
+        for (let i = 0; i < users.length; i++)
+        {
+            if (users[i].username === decryptedUser && user === decryptedData)
+            {
+                verifyPassword(decryptedPassword, account.salt, account.hash, () => {
+                    target.data = decryptedData;
+                    res.status(200).json({success: 'Successfully verified'});
+                }, () => {
+                    res.status(400).json({error: 'Invalid credentials'});
+                });
+            }
         }
     }
 
@@ -156,6 +186,8 @@ app.put("/data", (req, res) => {
     }, () => {
         res.status(400).json({error: 'Invalid credentials'});
     });
+
+
 });
 
 const urlSafeToBase64 = (urlSafeStr) => {
