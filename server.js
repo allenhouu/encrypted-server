@@ -136,29 +136,21 @@ app.put("/data", (req, res) => {
     let decryptedPassword = decryptData(encryptedPassword);
     let decryptedData = decryptData(encryptedData);
     let userFound = false;
-
-    let target = users.find(user => user.username === decryptedUser);
-
-    if (!target) {
-        return res.status(404).json({error: 'Target not found'});
-    }
-
-    let account = target;
     let isAdmin = false;
 
     for (let i = 0; i < admin.length; i++) {
         if (admin[i].username === decryptedUser)
         {
             isAdmin = true;
-            account = admin[i];
-            for (let i = 0; i < users.length; i++) {
-                if (user === users[i].data)
+            for (let j = 0; j < users.length; j++) {
+                if (user === users[j].data)
                 {
-                    verifyPassword(decryptedPassword, account.salt, account.hash, () => {
-                        target.data = decryptedData;
-                        res.status(200).json({success: 'Successfully verified'});
+                    userFound = true;
+                    verifyPassword(decryptedPassword, admin[i].salt, admin[i].hash, () => {
+                        user[j].data = decryptedData;
+                        return res.status(200).json({success: 'Successfully verified'});
                     }, () => {
-                        res.status(400).json({error: 'Invalid credentials'});
+                        return res.status(400).json({error: 'Invalid credentials'});
                     });
                 }
             }
@@ -170,24 +162,21 @@ app.put("/data", (req, res) => {
         {
             if (users[i].username === decryptedUser && user === decryptedData)
             {
-                verifyPassword(decryptedPassword, account.salt, account.hash, () => {
-                    target.data = decryptedData;
-                    res.status(200).json({success: 'Successfully verified'});
+                userFound = true;
+                verifyPassword(decryptedPassword, user[i].salt, user[i].hash, () => {
+                    user[i].data = decryptedData;
+                    return res.status(200).json({success: 'Successfully verified'});
                 }, () => {
-                    res.status(400).json({error: 'Invalid credentials'});
+                    return res.status(400).json({error: 'Invalid credentials'});
                 });
             }
         }
     }
 
-    verifyPassword(decryptedPassword, account.salt, account.hash, () => {
-        target.data = decryptedData;
-        res.status(200).json({success: 'Successfully verified'});
-    }, () => {
-        res.status(400).json({error: 'Invalid credentials'});
-    });
-
-
+    if (!userFound)
+    {
+        return res.status(400).json({error: "User not found"});
+    }
 });
 
 const urlSafeToBase64 = (urlSafeStr) => {
@@ -201,35 +190,55 @@ const urlSafeToBase64 = (urlSafeStr) => {
 
 app.get("/data", (req, res) => {
     const {u, p} = req.query;
-    let encryptedUserName = urlSafeToBase64(u);
-    let encryptedPassword = urlSafeToBase64(p);
+    const user = req.query.user;
 
-    if (!encryptedUserName || !encryptedPassword) {
+    if (!u || !p || !user) {
         return res.status(400).json({error: "Invalid query parameters"})
     }
+    let encryptedUserName = urlSafeToBase64(u);
+    let encryptedPassword = urlSafeToBase64(p);
     let decryptedUser = decryptData(encryptedUserName);
     let decryptedPassword = decryptData(encryptedPassword);
 
-    let target = users.find(user => user.username === decryptedUser);
-
-    if (!target) {
-        return res.status(404).json({error: "Target not found"});
-    }
-    let account = target;
+    let userFound = false;
     let isAdmin = false;
 
+
     for (let i = 0; i < admin.length; i++) {
-        if (admin[i].user === decryptedUser)
+        if (admin[i].username === decryptedUser)
         {
             isAdmin = true;
-            account = admin[i];
-            break;
+            for (let j = 0; j < users.length; j++) {
+                if (user === users[j].data)
+                {
+                    userFound = true;
+                    verifyPassword(decryptedPassword, admin[i].salt, admin[i].hash, () => {
+                        return res.status(200).json(users[j].data);
+                    }, () => {
+                        return res.status(400).json({error: 'Invalid credentials'});
+                    });
+                }
+            }
+        }
+    }
+    if (!isAdmin)
+    {
+        for (let i = 0; i < users.length; i++)
+        {
+            if (users[i].username === user && user === decryptedUser)
+            {
+                userFound = true;
+                verifyPassword(decryptedPassword, user[i].salt, user[i].hash, () => {
+                    return res.status(200).json(users[i].data);
+                }, () => {
+                    return res.status(400).json({error: 'Invalid credentials'});
+                });
+            }
         }
     }
 
-    verifyPassword(decryptedPassword, account.salt, account.hash, () => {
-        res.status(200).json(account.data);
-    }, () => {
-        res.status(400).json({error: 'Invalid credentials'});
-    })
+    if (!userFound)
+    {
+        return res.status(400).json({error: "User not found"});
+    }
 });
