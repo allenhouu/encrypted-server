@@ -145,7 +145,7 @@ app.put("/data", (req, res) => {
         {
             isAdmin = true;
             for (let j = 0; j < users.length; j++) {
-                if (user === users[j].data)
+                if (user === users[j].username)
                 {
                     userFound = true;
                     verifyPassword(decryptedPassword, admin[i].salt, admin[i].hash, () => {
@@ -211,7 +211,7 @@ app.get("/data", (req, res) => {
         {
             isAdmin = true;
             for (let j = 0; j < users.length; j++) {
-                if (user === users[j].data)
+                if (user === users[j].username)
                 {
                     userFound = true;
                     verifyPassword(decryptedPassword, admin[i].salt, admin[i].hash, () => {
